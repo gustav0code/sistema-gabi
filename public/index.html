@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Gabi — Consultório de Psicologia</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+  <!-- Feather Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🧠</div>
+      <div class="logo-text">
+        <h2 id="sidebarClinicName">Sistema Gabi</h2>
+        <span>Consultório de Psicologia</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section-title">Principal</div>
+    <a class="nav-item active" data-section="dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </a>
+    <a class="nav-item" data-section="agenda" onclick="navigate('agenda')">
+      <span class="nav-icon">📅</span><span>Agenda</span>
+    </a>
+
+    <div class="nav-section-title">Clientes</div>
+    <a class="nav-item" data-section="patients" onclick="navigate('patients')">
+      <span class="nav-icon">👥</span><span>Pacientes</span>
+    </a>
+    <a class="nav-item" data-section="prontuario" onclick="navigate('prontuario')">
+      <span class="nav-icon">📋</span><span>Prontuário</span>
+    </a>
+
+    <div class="nav-section-title">Financeiro</div>
+    <a class="nav-item" data-section="financeiro" onclick="navigate('financeiro')">
+      <span class="nav-icon">💰</span><span>Financeiro</span>
+      <span class="nav-badge" id="pendingBadge" style="display:none">0</span>
+    </a>
+
+    <div class="nav-section-title">Configurações</div>
+    <a class="nav-item" data-section="servicos" onclick="navigate('servicos')">
+      <span class="nav-icon">🗂️</span><span>Serviços</span>
+    </a>
+    <a class="nav-item" data-section="config" onclick="navigate('config')">
+      <span class="nav-icon">⚙️</span><span>Configurações</span>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="psych-info">
+      <div class="psych-avatar">👩‍⚕️</div>
+      <div>
+        <div class="psych-name" id="sidebarPsychName">Dra. Gabrielle</div>
+        <div class="psych-crp" id="sidebarCRP">CRP</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ========== MAIN ========== -->
+<div id="main">
+  <header class="topbar">
+    <h1 id="pageTitle">Dashboard</h1>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </header>
+
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <section id="section-dashboard" class="page-section active">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card stat-primary">
+          <div class="stat-icon">👥</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statPatients">—</div>
+            <div class="stat-label">Pacientes Ativos</div>
+          </div>
+        </div>
+        <div class="stat-card stat-info">
+          <div class="stat-icon">📅</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statToday">—</div>
+            <div class="stat-label">Consultas Hoje</div>
+          </div>
+        </div>
+        <div class="stat-card stat-warning">
+          <div class="stat-icon">📊</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statMonth">—</div>
+            <div class="stat-label">Consultas este Mês</div>
+          </div>
+        </div>
+        <div class="stat-card stat-success">
+          <div class="stat-icon">💰</div>
+          <div class="stat-content">
+            <div class="stat-value" id="statRevenue">—</div>
+            <div class="stat-label">Receita do Mês</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-grid-3">
+        <div>
+          <div class="card mb-16">
+            <div class="card-header">
+              <h3>📅 Agenda de Hoje</h3>
+              <button class="btn btn-primary btn-sm" onclick="openNewAppointment()">+ Nova</button>
+            </div>
+            <div class="card-body" id="todayList">
+              <div class="loading"><div class="spinner"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>📈 Receita Mensal</h3></div>
+            <div class="card-body"><div class="chart-container"><canvas id="revenueChart"></canvas></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card mb-16">
+            <div class="card-header"><h3>🔜 Próximas Consultas</h3></div>
+            <div class="card-body" id="upcomingList">
+              <div class="loading"><div class="spinner"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>👥 Pacientes Recentes</h3>
+              <button class="btn btn-secondary btn-sm" onclick="navigate('patients')">Ver todos</button>
+            </div>
+            <div class="card-body" id="recentPatients">
+              <div class="loading"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== AGENDA ===== -->
+    <section id="section-agenda" class="page-section">
+      <div class="page-grid-3" style="grid-template-columns: 1fr 300px;">
+        <div class="card">
+          <div class="card-body" style="padding: 16px;">
+            <div id="calendar"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <h3 id="agendaSideDateTitle">Hoje</h3>
+            </div>
+            <div class="card-body" style="padding:12px;" id="agendaSideList">
+              <div class="empty-state"><div class="empty-icon">📅</div><p>Clique em um dia no calendário</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PATIENTS ===== -->
+    <section id="section-patients" class="page-section">
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control" id="patientSearch" placeholder="Buscar por nome, CPF, telefone..." oninput="searchPatients()">
+        </div>
+        <select class="form-control" style="width:160px;" id="patientStatusFilter" onchange="searchPatients()">
+          <option value="">Todos os status</option>
+          <option value="active">Ativos</option>
+          <option value="inactive">Inativos</option>
+          <option value="discharged">Alta</option>
+        </select>
+        <button class="btn btn-primary" onclick="openPatientModal()">+ Novo Paciente</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <div class="table-container">
+            <table id="patientsTable">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>CPF</th>
+                  <th>Telefone</th>
+                  <th>Email</th>
+                  <th>Idade</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="patientsTbody">
+                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PATIENT PROFILE ===== -->
+    <section id="section-patient-profile" class="page-section">
+      <div style="margin-bottom:16px;">
+        <button class="btn btn-secondary btn-sm" onclick="navigate('patients')">← Voltar</button>
+      </div>
+      <div id="patientProfileContent"></div>
+    </section>
+
+    <!-- ===== PRONTUÁRIO ===== -->
+    <section id="section-prontuario" class="page-section">
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control" id="prontuarioSearch" placeholder="Buscar paciente..." oninput="searchProntuario()">
+        </div>
+      </div>
+      <div class="page-grid-3" style="grid-template-columns: 280px 1fr;">
+        <div class="card">
+          <div class="card-header"><h3>Pacientes</h3></div>
+          <div class="card-body" style="padding:8px;" id="prontuarioPatientList">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+        <div id="prontuarioContent">
+          <div class="empty-state" style="padding-top:80px;">
+            <div class="empty-icon">📋</div>
+            <h4>Selecione um Paciente</h4>
+            <p>Escolha um paciente na lista para ver o prontuário</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FINANCEIRO ===== -->
+    <section id="section-financeiro" class="page-section">
+      <div class="fin-summary-grid" id="finSummaryGrid">
+        <div class="fin-card">
+          <div class="fin-value text-success" id="finReceived">—</div>
+          <div class="fin-label">Recebido este Mês</div>
+        </div>
+        <div class="fin-card">
+          <div class="fin-value text-warning" id="finPending">—</div>
+          <div class="fin-label">Pendente este Mês</div>
+        </div>
+        <div class="fin-card">
+          <div class="fin-value text-primary" id="finTotal">—</div>
+          <div class="fin-label">Total Previsto</div>
+        </div>
+      </div>
+
+      <div class="page-grid-2">
+        <div class="card">
+          <div class="card-header"><h3>📈 Histórico de Receita</h3></div>
+          <div class="card-body"><div class="chart-container"><canvas id="finChart"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>💳 Formas de Pagamento</h3></div>
+          <div class="card-body"><div class="chart-container"><canvas id="payMethodChart"></canvas></div></div>
+        </div>
+      </div>
+
+      <div class="card mt-16">
+        <div class="card-header">
+          <h3>Pagamentos</h3>
+          <div class="d-flex gap-8 align-center">
+            <select class="form-control" style="width:130px;" id="finMonthFilter" onchange="loadFinanceiro()"></select>
+            <select class="form-control" style="width:130px;" id="finStatusFilter" onchange="loadFinanceiro()">
+              <option value="">Todos</option>
+              <option value="pending">Pendentes</option>
+              <option value="paid">Pagos</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Paciente</th>
+                  <th>Serviço</th>
+                  <th>Data Consulta</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                  <th>Pagamento</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="paymentsTbody">
+                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SERVIÇOS ===== -->
+    <section id="section-servicos" class="page-section">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+        <button class="btn btn-primary" onclick="openServiceModal()">+ Novo Serviço</button>
+      </div>
+      <div class="services-grid" id="servicesGrid">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </section>
+
+    <!-- ===== CONFIGURAÇÕES ===== -->
+    <section id="section-config" class="page-section">
+      <div style="max-width: 700px;">
+        <div class="card mb-16">
+          <div class="card-header"><h3>🏥 Dados da Clínica</h3></div>
+          <div class="card-body">
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label class="form-label">Nome da Clínica</label>
+                <input type="text" class="form-control" id="cfg-clinic_name">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nome da Psicóloga</label>
+                <input type="text" class="form-control" id="cfg-psychologist_name">
+              </div>
+            </div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label class="form-label">CRP</label>
+                <input type="text" class="form-control" id="cfg-crp" placeholder="Ex: CRP 06/12345">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Telefone</label>
+                <input type="text" class="form-control" id="cfg-phone">
+              </div>
+            </div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="cfg-email">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Endereço</label>
+                <input type="text" class="form-control" id="cfg-address">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-16">
+          <div class="card-header"><h3>⏰ Horários e Padrões</h3></div>
+          <div class="card-body">
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label class="form-label">Início do Atendimento</label>
+                <input type="time" class="form-control" id="cfg-working_hours_start">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fim do Atendimento</label>
+                <input type="time" class="form-control" id="cfg-working_hours_end">
+              </div>
+            </div>
+            <div class="form-row cols-2">
+              <div class="form-group">
+                <label class="form-label">Duração Padrão (minutos)</label>
+                <input type="number" class="form-control" id="cfg-default_duration" min="10" max="180">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Valor Padrão (R$)</label>
+                <input type="number" class="form-control" id="cfg-default_price" min="0" step="0.01">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:right;">
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Salvar Configurações</button>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ========== MODAL: PACIENTE ========== -->
+<div class="modal-overlay" id="patientModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="patientModalTitle">Novo Paciente</h3>
+      <button class="modal-close" onclick="closeModal('patientModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pf-id">
+      <div class="form-section-title">Dados Pessoais</div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Nome Completo *</label>
+          <input type="text" class="form-control" id="pf-name" placeholder="Nome completo do paciente">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CPF</label>
+          <input type="text" class="form-control" id="pf-cpf" placeholder="000.000.000-00">
+        </div>
+      </div>
+      <div class="form-row cols-3">
+        <div class="form-group">
+          <label class="form-label">Data de Nascimento</label>
+          <input type="date" class="form-control" id="pf-birth_date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado Civil</label>
+          <select class="form-control" id="pf-marital_status">
+            <option value="">— Selecione —</option>
+            <option>Solteiro(a)</option><option>Casado(a)</option><option>Divorciado(a)</option>
+            <option>Viúvo(a)</option><option>União Estável</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Profissão</label>
+          <input type="text" class="form-control" id="pf-occupation">
+        </div>
+      </div>
+      <div class="form-section-title mt-8">Contato</div>
+      <div class="form-row cols-3">
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="text" class="form-control" id="pf-phone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" class="form-control" id="pf-email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Como nos encontrou</label>
+          <input type="text" class="form-control" id="pf-referral" placeholder="Indicação, internet...">
+        </div>
+      </div>
+      <div class="form-section-title mt-8">Endereço</div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Endereço</label>
+          <input type="text" class="form-control" id="pf-address" placeholder="Rua, número, complemento">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cidade</label>
+          <input type="text" class="form-control" id="pf-city">
+        </div>
+      </div>
+      <div class="form-row cols-3">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <input type="text" class="form-control" id="pf-state" placeholder="SP" maxlength="2">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CEP</label>
+          <input type="text" class="form-control" id="pf-zip" placeholder="00000-000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" id="pf-status">
+            <option value="active">Ativo</option>
+            <option value="inactive">Inativo</option>
+            <option value="discharged">Alta</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-section-title mt-8">Contato de Emergência</div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input type="text" class="form-control" id="pf-emergency_contact_name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="text" class="form-control" id="pf-emergency_contact_phone">
+        </div>
+      </div>
+      <div class="form-section-title mt-8">Plano de Saúde</div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Plano de Saúde</label>
+          <input type="text" class="form-control" id="pf-health_insurance" placeholder="Nome do plano">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Número da Carteirinha</label>
+          <input type="text" class="form-control" id="pf-insurance_number">
+        </div>
+      </div>
+      <div class="form-section-title mt-8">Observações</div>
+      <div class="form-group">
+        <textarea class="form-control" id="pf-notes" rows="3" placeholder="Observações gerais, histórico relevante..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('patientModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePatient()">💾 Salvar Paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: CONSULTA ========== -->
+<div class="modal-overlay" id="appointmentModal">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <h3 id="aptModalTitle">Nova Consulta</h3>
+      <button class="modal-close" onclick="closeModal('appointmentModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="af-id">
+      <div class="form-group">
+        <label class="form-label">Paciente *</label>
+        <input type="text" class="form-control" id="af-patient-search" placeholder="Digite para buscar..." oninput="searchPatientForApt()" autocomplete="off">
+        <input type="hidden" id="af-patient_id">
+        <div id="af-patient-dropdown" style="display:none; position:relative; z-index:200;">
+          <div id="af-patient-list" style="background:#fff; border:1.5px solid var(--border); border-radius:8px; max-height:180px; overflow-y:auto; box-shadow:var(--shadow);"></div>
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Data *</label>
+          <input type="date" class="form-control" id="af-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Horário *</label>
+          <input type="time" class="form-control" id="af-time">
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Serviço</label>
+          <select class="form-control" id="af-service_id" onchange="onServiceChange()">
+            <option value="">— Selecione —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duração (min)</label>
+          <input type="number" class="form-control" id="af-duration" value="50" min="10" max="300">
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" class="form-control" id="af-price" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" id="af-status">
+            <option value="scheduled">Agendado</option>
+            <option value="completed">Realizado</option>
+            <option value="cancelled">Cancelado</option>
+            <option value="no_show">Não Compareceu</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <textarea class="form-control" id="af-notes" rows="2" placeholder="Observações sobre a consulta..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('appointmentModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAppointment()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: DETALHE CONSULTA ========== -->
+<div class="modal-overlay" id="aptDetailModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Detalhes da Consulta</h3>
+      <button class="modal-close" onclick="closeModal('aptDetailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="aptDetailBody"></div>
+    <div class="modal-footer" id="aptDetailFooter"></div>
+  </div>
+</div>
+
+<!-- ========== MODAL: SERVIÇO ========== -->
+<div class="modal-overlay" id="serviceModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="svcModalTitle">Novo Serviço</h3>
+      <button class="modal-close" onclick="closeModal('serviceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sf-id">
+      <div class="form-group">
+        <label class="form-label">Nome do Serviço *</label>
+        <input type="text" class="form-control" id="sf-name" placeholder="Ex: Consulta Individual">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <textarea class="form-control" id="sf-description" rows="2"></textarea>
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Duração (min)</label>
+          <input type="number" class="form-control" id="sf-duration" value="50" min="10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" class="form-control" id="sf-price" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cor</label>
+        <div class="color-picker-row" id="colorPicker">
+          <div class="color-option selected" style="background:#6C63FF" data-color="#6C63FF" onclick="selectColor(this)"></div>
+          <div class="color-option" style="background:#4ECDC4" data-color="#4ECDC4" onclick="selectColor(this)"></div>
+          <div class="color-option" style="background:#FF6B6B" data-color="#FF6B6B" onclick="selectColor(this)"></div>
+          <div class="color-option" style="background:#F39C12" data-color="#F39C12" onclick="selectColor(this)"></div>
+          <div class="color-option" style="background:#2ECC71" data-color="#2ECC71" onclick="selectColor(this)"></div>
+          <div class="color-option" style="background:#3498DB" data-color="#3498DB" onclick="selectColor(this)"></div>
+          <div class="color-option" style="background:#9B59B6" data-color="#9B59B6" onclick="selectColor(this)"></div>
+          <div class="color-option" style="background:#E91E63" data-color="#E91E63" onclick="selectColor(this)"></div>
+        </div>
+        <input type="hidden" id="sf-color" value="#6C63FF">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('serviceModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveService()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: PRONTUÁRIO / NOTA ========== -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <h3 id="noteModalTitle">Anotação de Sessão</h3>
+      <button class="modal-close" onclick="closeModal('noteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="nf-id">
+      <input type="hidden" id="nf-patient_id">
+      <input type="hidden" id="nf-appointment_id">
+      <div class="form-group">
+        <label class="form-label">Humor / Estado do Paciente</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;"><input type="radio" name="nf-mood" value="1"> 😞 1</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;"><input type="radio" name="nf-mood" value="2"> 😟 2</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;"><input type="radio" name="nf-mood" value="3"> 😐 3</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;"><input type="radio" name="nf-mood" value="4"> 🙂 4</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;"><input type="radio" name="nf-mood" value="5"> 😊 5</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anotações da Sessão</label>
+        <textarea class="form-control" id="nf-content" rows="10" placeholder="Relato da sessão, observações clínicas, evolução do paciente, plano terapêutico..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('noteModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNote()">💾 Salvar Anotação</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: PAGAMENTO ========== -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Registrar Pagamento</h3>
+      <button class="modal-close" onclick="closeModal('payModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="payf-id">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input type="number" class="form-control" id="payf-amount" min="0" step="0.01">
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Forma de Pagamento</label>
+          <select class="form-control" id="payf-method">
+            <option value="pix">PIX</option>
+            <option value="dinheiro">Dinheiro</option>
+            <option value="cartao_credito">Cartão de Crédito</option>
+            <option value="cartao_debito">Cartão de Débito</option>
+            <option value="transferencia">Transferência</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data do Pagamento</label>
+          <input type="date" class="form-control" id="payf-date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('payModal')">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmPayment()">✓ Confirmar Pagamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: EXCLUIR ========== -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Confirmar Exclusão</h3>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="deleteModalMsg" style="font-size:15px; line-height:1.5;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancelar</button>
+      <button class="btn btn-danger" id="deleteConfirmBtn">🗑 Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCRIPTS ========== -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/pt-br.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
