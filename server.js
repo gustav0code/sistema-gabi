@@ -2,6 +2,8 @@ const express = require('express');
 const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const session = require('express-session');
 
 // Suprimir aviso de experimental do node:sqlite
 const { emitWarning } = process;
@@ -112,6 +114,25 @@ db.exec(`
   );
 `);
 
+// Tabela de usuários
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  );
+`);
+
+// Criar usuário padrão se não existir
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password + 'gabi_salt_2024').digest('hex');
+}
+const defaultUser = db.prepare('SELECT id FROM users WHERE username=?').get('gabi');
+if (!defaultUser) {
+  db.prepare('INSERT INTO users (username, password_hash) VALUES (?,?)').run('gabi', hashPassword('gabi2024'));
+}
+
 // Inserir configurações padrão
 const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
 insertSetting.run('clinic_name', 'Consultório de Psicologia');
@@ -137,6 +158,67 @@ if (countServices.c === 0) {
 }
 
 app.use(express.json());
+
+// ==================== SESSÃO ====================
+app.use(session({
+  secret: 'gabi_sistema_secret_2024',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 8 * 60 * 60 * 1000 } // 8 horas
+}));
+
+// ==================== AUTH ====================
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Usuário e senha obrigatórios' });
+  const user = db.prepare('SELECT * FROM users WHERE username=?').get(username);
+  if (!user || user.password_hash !== hashPassword(password)) {
+    return res.status(401).json({ error: 'Usuário ou senha incorretos' });
+  }
+  req.session.userId = user.id;
+  req.session.username = user.username;
+  res.json({ success: true });
+});
+
+app.post('/api/logout', (req, res) => {
+  req.session.destroy(() => res.json({ success: true }));
+});
+
+app.get('/api/me', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Não autenticado' });
+  res.json({ username: req.session.username });
+});
+
+app.post('/api/change-password', (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Não autenticado' });
+  const { current_password, new_password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.session.userId);
+  if (user.password_hash !== hashPassword(current_password)) {
+    return res.status(400).json({ error: 'Senha atual incorreta' });
+  }
+  if (!new_password || new_password.length < 4) {
+    return res.status(400).json({ error: 'Nova senha deve ter pelo menos 4 caracteres' });
+  }
+  db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hashPassword(new_password), req.session.userId);
+  res.json({ success: true });
+});
+
+// Middleware: protege todas as rotas /api/* exceto /api/login
+app.use('/api', (req, res, next) => {
+  if (req.path === '/login') return next();
+  if (!req.session.userId) return res.status(401).json({ error: 'Não autenticado' });
+  next();
+});
+
+// Arquivos estáticos — login.html sempre acessível, index.html protegido
+app.get('/', (req, res) => {
+  if (!req.session.userId) return res.redirect('/login');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+app.get('/login', (req, res) => {
+  if (req.session.userId) return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ==================== DASHBOARD ====================

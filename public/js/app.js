@@ -2,6 +2,38 @@
 // SISTEMA GABI — APP.JS — Lógica principal do sistema
 // =====================================================
 
+// ==================== AUTH ====================
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+
+function openChangePassword() {
+  document.getElementById('cp-current').value = '';
+  document.getElementById('cp-new').value = '';
+  document.getElementById('cp-confirm').value = '';
+  openModal('changePasswordModal');
+}
+
+async function saveNewPassword() {
+  const current = document.getElementById('cp-current').value;
+  const novo = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  if (novo !== confirm) return showToast('As senhas não coincidem', 'error');
+  const res = await fetch('/api/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: current, new_password: novo })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    closeModal('changePasswordModal');
+    showToast('Senha alterada com sucesso!', 'success');
+  } else {
+    showToast(data.error || 'Erro ao alterar senha', 'error');
+  }
+}
+
 let calendar = null;
 let revenueChart = null;
 let finChart = null;
