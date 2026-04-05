@@ -4,6 +4,19 @@ Todas as alterações relevantes do projeto serão documentadas aqui.
 
 ---
 
+## [1.1.0] — 2026-04-04
+
+### Adicionado
+- Sistema de login com usuário e senha
+- Sessão autenticada com duração de 8 horas
+- Página de login (`/login`) com design responsivo
+- Botão "Sair" na sidebar
+- Troca de senha pelo painel (botão 🔑 Senha na sidebar)
+- Todas as rotas da API protegidas — sem login, sem acesso
+- Credenciais padrão: usuário `gabi`, senha `gabi2024`
+
+---
+
 ## [1.0.0] — 2026-04-04
 
 ### Adicionado
